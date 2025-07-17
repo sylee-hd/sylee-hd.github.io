@@ -11,13 +11,27 @@
             margin: 0;
             padding: 20px;
         }
-        #player-container {
-            width: 50%;
+        #main-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            width: 80%;
             margin: 20px auto;
+        }
+        #player-container {
+            width: 30%; /* Reduced size */
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         #video {
             width: 100%;
+            display: block;
+        }
+        #controls-container {
+            flex: 1;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         #info-container {
             display: flex;
@@ -61,8 +75,16 @@
 </head>
 <body>
 
-    <div id="player-container">
-        <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls autoplay muted></video>
+    <div id="main-content">
+        <div id="player-container">
+            <!-- Removed autoplay, added muted to allow script-based play without user gesture in some cases -->
+            <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls muted></video>
+        </div>
+        <div id="controls-container">
+            <h2>Controls</h2>
+            <p>Click the button to start playback.</p>
+            <button id="playButton" autofocus>Play Video</button>
+        </div>
     </div>
 
     <div id="info-container">
@@ -87,7 +109,12 @@
         function logToPage(message, type = 'log') {
             const timestamp = new Date().toLocaleTimeString();
             const line = document.createElement('div');
-            line.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            // Basic string formatting for readability
+            let formattedMessage = message.replace(/\n/g, '<br>').replace(/\"/g, '"');
+            if (formattedMessage.startsWith('"') && formattedMessage.endsWith('"')) {
+                formattedMessage = formattedMessage.substring(1, formattedMessage.length - 1);
+            }
+            line.innerHTML = `<strong>[${timestamp}]</strong> ${formattedMessage}`;
             if (type === 'error') {
                 line.style.color = '#ff7b7b';
             }
@@ -96,12 +123,12 @@
         }
 
         console.log = function(...args) {
-            logToPage(args.map(arg => JSON.stringify(arg)).join(' '));
+            logToPage(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg).join(' '));
             originalConsoleLog.apply(console, args);
         };
 
         console.error = function(...args) {
-            logToPage(args.map(arg => JSON.stringify(arg)).join(' '), 'error');
+            logToPage(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg).join(' '), 'error');
             originalConsoleError.apply(console, args);
         };
 
@@ -111,18 +138,28 @@
 
         const statusEl = document.getElementById('status');
         const errorEl = document.getElementById('error-message');
+        const video = document.getElementById('video');
+        const playButton = document.getElementById('playButton');
+
+        let player; // Keep player in a broader scope
 
         async function initPlayer() {
             console.log('Initializing Shaka Player...');
             
-            const video = document.getElementById('video');
-            const player = new shaka.Player(video);
+            player = new shaka.Player(video);
+            console.log('Shaka Player instance created.');
 
             // Attach player to the window to make it easy to access in the JS console
             window.player = player;
 
-            // Listen for error events.
+            // Add listeners for various player events for detailed logging
             player.addEventListener('error', onErrorEvent);
+            player.addEventListener('drmsessionupdate', () => console.log('DRM session updated.'));
+            player.addEventListener('streaming', onStreamingEvent);
+            player.addEventListener('loading', () => console.log('Player state: loading...'));
+            player.addEventListener('loaded', () => console.log('Player state: loaded.'));
+            player.addEventListener('unloading', () => console.log('Player state: unloading.'));
+
 
             // Configure the DRM license server
             player.configure({
@@ -132,16 +169,28 @@
             });
 
             console.log('DRM configured with license server:', licenseServer);
+            console.log('Initial DRM config:', JSON.stringify(player.getConfiguration().drm, null, 2));
+
 
             try {
                 console.log('Attempting to load manifest:', manifestUri);
                 await player.load(manifestUri);
-                console.log('The video has been loaded successfully!');
-                statusEl.textContent = 'Playback successful!';
+                console.log('The video has been loaded successfully! Ready to play.');
+                statusEl.textContent = 'Ready to play. Click the play button!';
                 statusEl.className = 'success';
             } catch (e) {
                 // onError is called automatically through the error event listener.
                 console.error('Error during manifest load', e);
+            }
+        }
+
+        function onStreamingEvent() {
+            console.log('Streaming has started.');
+            const drmInfo = player.getDrmInfo();
+            if (drmInfo) {
+                console.log('DRM Info available:', drmInfo);
+            } else {
+                console.log('No DRM info available at streaming event.');
             }
         }
 
@@ -157,6 +206,18 @@
             statusEl.className = 'error';
             errorEl.textContent = JSON.stringify(error, null, 2);
         }
+
+        playButton.addEventListener('click', async () => {
+            console.log('Play button clicked.');
+            try {
+                await video.play();
+                console.log('Playback started.');
+                statusEl.textContent = 'Playback in progress...';
+            } catch (error) {
+                console.error('Play() failed', error);
+                onError(error);
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             // Install polyfills and check for browser support.
