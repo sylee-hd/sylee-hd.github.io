@@ -11,27 +11,14 @@
             margin: 0;
             padding: 20px;
         }
-        #main-content {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
-            width: 80%;
-            margin: 20px auto;
-        }
         #player-container {
-            width: 30%; /* Reduced size */
+            width: 50%;
+            margin: 20px auto;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         #video {
             width: 100%;
             display: block;
-        }
-        #controls-container {
-            flex: 1;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         #info-container {
             width: 80%;
@@ -65,16 +52,8 @@
 </head>
 <body>
 
-    <div id="main-content">
-        <div id="player-container">
-            <!-- Removed autoplay, added muted to allow script-based play without user gesture in some cases -->
-            <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls muted></video>
-        </div>
-        <div id="controls-container">
-            <h2>Controls</h2>
-            <p>Click the button to start playback.</p>
-            <button id="playButton" autofocus>Play Video</button>
-        </div>
+    <div id="player-container">
+        <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls autoplay muted></video>
     </div>
 
     <div id="info-container">
@@ -121,7 +100,6 @@
         const licenseServer = 'https://proxy.uat.widevine.com/proxy';
 
         const video = document.getElementById('video');
-        const playButton = document.getElementById('playButton');
 
         let player; // Keep player in a broader scope
 
@@ -157,10 +135,11 @@
             try {
                 console.log('Attempting to load manifest:', manifestUri);
                 await player.load(manifestUri);
-                console.log('The video has been loaded successfully! Ready to play.');
+                console.log('The video has been loaded successfully! Autoplay should start.');
             } catch (e) {
-                // onError is called automatically through the error event listener.
-                console.error('Error during manifest load', e);
+                // onError is called automatically through the error event listener for many cases,
+                // but it's good practice to catch and log manifest load errors explicitly.
+                onError(e);
             }
         }
 
@@ -183,17 +162,6 @@
             // Log the error.
             console.error('Player error:', error);
         }
-
-        playButton.addEventListener('click', async () => {
-            console.log('Play button clicked.');
-            try {
-                await video.play();
-                console.log('Playback started.');
-            } catch (error) {
-                console.error('Play() failed', error);
-                onError(error);
-            }
-        });
 
         document.addEventListener('DOMContentLoaded', () => {
             // Install polyfills and check for browser support.
