@@ -11,9 +11,20 @@
             margin: 0;
             padding: 20px;
         }
+        #main-container {
+            display: flex;
+            gap: 20px;
+        }
+        #left-panel {
+            flex: 3;
+        }
+        #right-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
         #player-container {
-            width: 50%;
-            margin: 20px auto;
+            width: 100%;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         #video {
@@ -21,8 +32,8 @@
             display: block;
         }
         #controls-container {
-            width: 50%;
-            margin: 10px auto;
+            width: 100%;
+            margin-top: 10px;
             text-align: center;
         }
         button {
@@ -31,8 +42,9 @@
             margin: 5px;
         }
         #info-container {
-            width: 80%;
-            margin: 20px auto;
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
         }
         .info-box {
             flex: 1;
@@ -40,14 +52,17 @@
             border: 1px solid #ddd;
             padding: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
         }
         h2 {
             border-bottom: 2px solid #eee;
             padding-bottom: 10px;
             margin-top: 0;
+            flex-shrink: 0;
         }
         #console-log {
-            height: 300px;
+            flex-grow: 1;
             overflow-y: scroll;
             background-color: #2b2b2b;
             color: #f1f1f1;
@@ -55,6 +70,7 @@
             font-size: 14px;
             padding: 10px;
             white-space: pre-wrap;
+            min-height: 300px;
         }
     </style>
     <!-- Shaka Player script is still needed for the second button -->
@@ -63,19 +79,23 @@
 </head>
 <body>
 
-    <div id="player-container">
-        <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls muted></video>
-    </div>
-
-    <div id="controls-container">
-        <button id="nativePlayButton">Play with Native Player</button>
-        <button id="shakaPlayButton">Play with Shaka Player</button>
-    </div>
-
-    <div id="info-container">
-        <div class="info-box">
-            <h2>Browser Console</h2>
-            <div id="console-log"></div>
+    <div id="main-container">
+        <div id="left-panel">
+            <div id="player-container">
+                <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls muted></video>
+            </div>
+            <div id="controls-container">
+                <button id="nativePlayButton">Play with Native Player</button>
+                <button id="shakaPlayButton">Play with Shaka Player</button>
+            </div>
+        </div>
+        <div id="right-panel">
+            <div id="info-container">
+                <div class="info-box">
+                    <h2>Browser Console</h2>
+                    <div id="console-log"></div>
+                </div>
+            </div>
         </div>
     </div>
 
