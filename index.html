@@ -16,12 +16,14 @@
             gap: 20px;
         }
         #left-panel {
-            flex: 3;
-        }
-        #right-panel {
-            flex: 2;
+            flex-basis: 200px;
+            flex-shrink: 0;
             display: flex;
             flex-direction: column;
+        }
+        #right-panel {
+            flex-basis: 400px;
+            flex-shrink: 0;
         }
         #player-container {
             width: 100%;
@@ -54,6 +56,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
         h2 {
             border-bottom: 2px solid #eee;
@@ -81,20 +84,20 @@
 
     <div id="main-container">
         <div id="left-panel">
+            <div id="info-container">
+                <div class="info-box">
+                    <h2>Browser Console</h2>
+                    <div id="console-log"></div>
+                </div>
+            </div>
+        </div>
+        <div id="right-panel">
             <div id="player-container">
                 <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls muted></video>
             </div>
             <div id="controls-container">
                 <button id="nativePlayButton">Play with Native Player</button>
                 <button id="shakaPlayButton">Play with Shaka Player</button>
-            </div>
-        </div>
-        <div id="right-panel">
-            <div id="info-container">
-                <div class="info-box">
-                    <h2>Browser Console</h2>
-                    <div id="console-log"></div>
-                </div>
             </div>
         </div>
     </div>
