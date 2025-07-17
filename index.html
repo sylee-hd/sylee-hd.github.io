@@ -34,10 +34,8 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         #info-container {
-            display: flex;
             width: 80%;
             margin: 20px auto;
-            gap: 20px;
         }
         .info-box {
             flex: 1;
@@ -61,14 +59,6 @@
             padding: 10px;
             white-space: pre-wrap;
         }
-        #status.success {
-            color: green;
-            font-weight: bold;
-        }
-        #status.error {
-            color: red;
-            font-weight: bold;
-        }
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/shaka-player/4.3.4/shaka-player.ui.js"></script>
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/shaka-player/4.3.4/controls.css">
@@ -88,12 +78,6 @@
     </div>
 
     <div id="info-container">
-        <div class="info-box">
-            <h2>Player Status</h2>
-            <p id="status">Initializing...</p>
-            <h3>Error Details:</h3>
-            <pre id="error-message">None</pre>
-        </div>
         <div class="info-box">
             <h2>Browser Console</h2>
             <div id="console-log"></div>
@@ -136,8 +120,6 @@
         const manifestUri = 'https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd';
         const licenseServer = 'https://proxy.uat.widevine.com/proxy';
 
-        const statusEl = document.getElementById('status');
-        const errorEl = document.getElementById('error-message');
         const video = document.getElementById('video');
         const playButton = document.getElementById('playButton');
 
@@ -176,8 +158,6 @@
                 console.log('Attempting to load manifest:', manifestUri);
                 await player.load(manifestUri);
                 console.log('The video has been loaded successfully! Ready to play.');
-                statusEl.textContent = 'Ready to play. Click the play button!';
-                statusEl.className = 'success';
             } catch (e) {
                 // onError is called automatically through the error event listener.
                 console.error('Error during manifest load', e);
@@ -202,9 +182,6 @@
         function onError(error) {
             // Log the error.
             console.error('Player error:', error);
-            statusEl.textContent = 'Error during playback!';
-            statusEl.className = 'error';
-            errorEl.textContent = JSON.stringify(error, null, 2);
         }
 
         playButton.addEventListener('click', async () => {
@@ -212,7 +189,6 @@
             try {
                 await video.play();
                 console.log('Playback started.');
-                statusEl.textContent = 'Playback in progress...';
             } catch (error) {
                 console.error('Play() failed', error);
                 onError(error);
@@ -226,8 +202,6 @@
                 initPlayer();
             } else {
                 console.error('Browser not supported!');
-                statusEl.textContent = 'Browser not supported for Shaka Player.';
-                statusEl.className = 'error';
             }
         });
     </script>
