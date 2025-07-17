@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Widevine DRM Test Page</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        #player-container {
+            width: 50%;
+            margin: 20px auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #video {
+            width: 100%;
+        }
+        #info-container {
+            display: flex;
+            width: 80%;
+            margin: 20px auto;
+            gap: 20px;
+        }
+        .info-box {
+            flex: 1;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        h2 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        #console-log {
+            height: 300px;
+            overflow-y: scroll;
+            background-color: #2b2b2b;
+            color: #f1f1f1;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            padding: 10px;
+            white-space: pre-wrap;
+        }
+        #status.success {
+            color: green;
+            font-weight: bold;
+        }
+        #status.error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/shaka-player/4.3.4/shaka-player.ui.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/shaka-player/4.3.4/controls.css">
+</head>
+<body>
+
+    <div id="player-container">
+        <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls autoplay></video>
+    </div>
+
+    <div id="info-container">
+        <div class="info-box">
+            <h2>Player Status</h2>
+            <p id="status">Initializing...</p>
+            <h3>Error Details:</h3>
+            <pre id="error-message">None</pre>
+        </div>
+        <div class="info-box">
+            <h2>Browser Console</h2>
+            <div id="console-log"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Console Capture ---
+        const consoleLogEl = document.getElementById('console-log');
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+
+        function logToPage(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            if (type === 'error') {
+                line.style.color = '#ff7b7b';
+            }
+            consoleLogEl.appendChild(line);
+            consoleLogEl.scrollTop = consoleLogEl.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            logToPage(args.map(arg => JSON.stringify(arg)).join(' '));
+            originalConsoleLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            logToPage(args.map(arg => JSON.stringify(arg)).join(' '), 'error');
+            originalConsoleError.apply(console, args);
+        };
+
+        // --- Shaka Player Initialization ---
+        const manifestUri = 'https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd';
+        const licenseServer = 'https://proxy.uat.widevine.com/proxy';
+
+        const statusEl = document.getElementById('status');
+        const errorEl = document.getElementById('error-message');
+
+        async function initPlayer() {
+            console.log('Initializing Shaka Player...');
+            
+            const video = document.getElementById('video');
+            const player = new shaka.Player(video);
+
+            // Attach player to the window to make it easy to access in the JS console
+            window.player = player;
+
+            // Listen for error events.
+            player.addEventListener('error', onErrorEvent);
+
+            // Configure the DRM license server
+            player.configure({
+                drm: {
+                    servers: { 'com.widevine.alpha': licenseServer }
+                }
+            });
+
+            console.log('DRM configured with license server:', licenseServer);
+
+            try {
+                console.log('Attempting to load manifest:', manifestUri);
+                await player.load(manifestUri);
+                console.log('The video has been loaded successfully!');
+                statusEl.textContent = 'Playback successful!';
+                statusEl.className = 'success';
+            } catch (e) {
+                // onError is called automatically through the error event listener.
+                console.error('Error during manifest load', e);
+            }
+        }
+
+        function onErrorEvent(event) {
+            // Extract the shaka.util.Error object from the event.
+            onError(event.detail);
+        }
+
+        function onError(error) {
+            // Log the error.
+            console.error('Player error:', error);
+            statusEl.textContent = 'Error during playback!';
+            statusEl.className = 'error';
+            errorEl.textContent = JSON.stringify(error, null, 2);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Install polyfills and check for browser support.
+            shaka.polyfill.installAll();
+            if (shaka.Player.isBrowserSupported()) {
+                initPlayer();
+            } else {
+                console.error('Browser not supported!');
+                statusEl.textContent = 'Browser not supported for Shaka Player.';
+                statusEl.className = 'error';
+            }
+        });
+    </script>
+
+</body>
+</html>
