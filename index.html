@@ -11,40 +11,18 @@
             margin: 0;
             padding: 20px;
         }
-        #main-container {
-            display: flex;
-            gap: 20px;
-        }
-        #left-panel {
-            flex: 3;
-        }
-        #right-panel {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-        }
         #player-container {
-            width: 100%;
+            width: 50%;
+            margin: 20px auto;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         #video {
             width: 100%;
             display: block;
         }
-        #controls-container {
-            width: 100%;
-            margin-top: 10px;
-            text-align: center;
-        }
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
-            margin: 5px;
-        }
         #info-container {
-            width: 100%;
-            flex-grow: 1;
-            display: flex;
+            width: 80%;
+            margin: 20px auto;
         }
         .info-box {
             flex: 1;
@@ -52,17 +30,14 @@
             border: 1px solid #ddd;
             padding: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
         }
         h2 {
             border-bottom: 2px solid #eee;
             padding-bottom: 10px;
             margin-top: 0;
-            flex-shrink: 0;
         }
         #console-log {
-            flex-grow: 1;
+            height: 300px;
             overflow-y: scroll;
             background-color: #2b2b2b;
             color: #f1f1f1;
@@ -70,32 +45,21 @@
             font-size: 14px;
             padding: 10px;
             white-space: pre-wrap;
-            min-height: 300px;
         }
     </style>
-    <!-- Shaka Player script is still needed for the second button -->
     <script src="https://ajax.googleapis.com/ajax/libs/shaka-player/4.3.4/shaka-player.ui.js"></script>
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/shaka-player/4.3.4/controls.css">
 </head>
 <body>
 
-    <div id="main-container">
-        <div id="left-panel">
-            <div id="player-container">
-                <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls muted></video>
-            </div>
-            <div id="controls-container">
-                <button id="nativePlayButton">Play with Native Player</button>
-                <button id="shakaPlayButton">Play with Shaka Player</button>
-            </div>
-        </div>
-        <div id="right-panel">
-            <div id="info-container">
-                <div class="info-box">
-                    <h2>Browser Console</h2>
-                    <div id="console-log"></div>
-                </div>
-            </div>
+    <div id="player-container">
+        <video id="video" poster="//shaka-player-demo.appspot.com/assets/poster.jpg" controls autoplay muted></video>
+    </div>
+
+    <div id="info-container">
+        <div class="info-box">
+            <h2>Browser Console</h2>
+            <div id="console-log"></div>
         </div>
     </div>
 
@@ -108,6 +72,7 @@
         function logToPage(message, type = 'log') {
             const timestamp = new Date().toLocaleTimeString();
             const line = document.createElement('div');
+            // Basic string formatting for readability
             let formattedMessage = message.replace(/\n/g, '<br>').replace(/\"/g, '"');
             if (formattedMessage.startsWith('"') && formattedMessage.endsWith('"')) {
                 formattedMessage = formattedMessage.substring(1, formattedMessage.length - 1);
@@ -130,55 +95,31 @@
             originalConsoleError.apply(console, args);
         };
 
-        // --- Player Setup ---
+        // --- Shaka Player Initialization ---
         const manifestUri = 'https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd';
         const licenseServer = 'https://proxy.uat.widevine.com/proxy';
 
         const video = document.getElementById('video');
-        const nativePlayButton = document.getElementById('nativePlayButton');
-        const shakaPlayButton = document.getElementById('shakaPlayButton');
-        let player; // Shaka player instance
 
-        // --- Button 1: Native Player ---
-        nativePlayButton.addEventListener('click', () => {
-            console.log('Attempting to play manifest with native <video> element...');
-            // Detach Shaka Player if it was attached
-            if (player) {
-                player.detach();
-                player.destroy();
-                player = null;
-                console.log('Shaka Player instance destroyed.');
-            }
-            video.src = manifestUri;
-            video.play().catch(err => {
-                console.error('Native playback failed.', err);
-            });
-        });
+        let player; // Keep player in a broader scope
 
-        // --- Button 2: Shaka Player ---
-        shakaPlayButton.addEventListener('click', async () => {
+        async function initPlayer() {
             console.log('Initializing Shaka Player...');
-            // Install polyfills just in case.
-            shaka.polyfill.installAll();
-            if (!shaka.Player.isBrowserSupported()) {
-                console.error('Browser not supported for Shaka Player!');
-                return;
-            }
             
-            // Use existing player instance or create a new one.
-            if (!player) {
-                player = new shaka.Player(video);
-                console.log('Shaka Player instance created.');
-                window.player = player; // For debugging
-                
-                // Add listeners for detailed logging
-                player.addEventListener('error', onErrorEvent);
-                player.addEventListener('drmsessionupdate', () => console.log('DRM session updated.'));
-                player.addEventListener('streaming', onStreamingEvent);
-                player.addEventListener('loading', () => console.log('Player state: loading...'));
-                player.addEventListener('loaded', () => console.log('Player state: loaded.'));
-                player.addEventListener('unloading', () => console.log('Player state: unloading.'));
-            }
+            player = new shaka.Player(video);
+            console.log('Shaka Player instance created.');
+
+            // Attach player to the window to make it easy to access in the JS console
+            window.player = player;
+
+            // Add listeners for various player events for detailed logging
+            player.addEventListener('error', onErrorEvent);
+            player.addEventListener('drmsessionupdate', () => console.log('DRM session updated.'));
+            player.addEventListener('streaming', onStreamingEvent);
+            player.addEventListener('loading', () => console.log('Player state: loading...'));
+            player.addEventListener('loaded', () => console.log('Player state: loaded.'));
+            player.addEventListener('unloading', () => console.log('Player state: unloading.'));
+
 
             // Configure the DRM license server
             player.configure({
@@ -186,16 +127,21 @@
                     servers: { 'com.widevine.alpha': licenseServer }
                 }
             });
+
             console.log('DRM configured with license server:', licenseServer);
+            console.log('Initial DRM config:', JSON.stringify(player.getConfiguration().drm, null, 2));
+
 
             try {
-                console.log('Attempting to load manifest with Shaka Player:', manifestUri);
+                console.log('Attempting to load manifest:', manifestUri);
                 await player.load(manifestUri);
-                console.log('Manifest loaded successfully with Shaka Player! Video should be playing.');
+                console.log('The video has been loaded successfully! Autoplay should start.');
             } catch (e) {
+                // onError is called automatically through the error event listener for many cases,
+                // but it's good practice to catch and log manifest load errors explicitly.
                 onError(e);
             }
-        });
+        }
 
         function onStreamingEvent() {
             console.log('Streaming has started.');
@@ -208,16 +154,23 @@
         }
 
         function onErrorEvent(event) {
+            // Extract the shaka.util.Error object from the event.
             onError(event.detail);
         }
 
         function onError(error) {
+            // Log the error.
             console.error('Player error:', error);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Page loaded. Starting native playback automatically.');
-            nativePlayButton.click();
+            // Install polyfills and check for browser support.
+            shaka.polyfill.installAll();
+            if (shaka.Player.isBrowserSupported()) {
+                initPlayer();
+            } else {
+                console.error('Browser not supported!');
+            }
         });
     </script>
 
